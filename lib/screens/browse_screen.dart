@@ -18,7 +18,10 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   static const _defaultTags = 'anime landscape';
 
   late final TextEditingController _searchController;
+  final ScrollController _scrollController = ScrollController();
+  int _page = 1;
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   String? _error;
   List<Wallpaper> _wallpapers = const [];
 
@@ -26,11 +29,13 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: _defaultTags);
+    _scrollController.addListener(_handleScroll);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -38,13 +43,14 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _page = 1;
     });
 
     try {
       final config = ref.read(appConfigProvider);
       final apiClient = AnimeApiClient(baseUrl: config.animeApiBaseUrl);
       final results = await apiClient.fetchWallpapers(
-        page: 1,
+        page: _page,
         tags: _searchController.text.trim().replaceAll(' ', '+'),
       );
       setState(() {
@@ -58,6 +64,48 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  void _applyTag(String tag) {
+    setState(() {
+      _searchController.text = tag;
+    });
+    _loadWallpapers();
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || _isLoading) {
+      return;
+    }
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final config = ref.read(appConfigProvider);
+      final apiClient = AnimeApiClient(baseUrl: config.animeApiBaseUrl);
+      final results = await apiClient.fetchWallpapers(
+        page: _page + 1,
+        tags: _searchController.text.trim().replaceAll(' ', '+'),
+      );
+      if (results.isNotEmpty) {
+        setState(() {
+          _page += 1;
+          _wallpapers = [..._wallpapers, ...results];
+        });
+      }
+    } finally {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  void _handleScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300) {
+      _loadMore();
     }
   }
 
@@ -96,11 +144,23 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
-              children: const [
-                TagChip(label: 'neon city'),
-                TagChip(label: 'mecha'),
-                TagChip(label: 'studio ghibli'),
-                TagChip(label: 'samurai'),
+              children: [
+                TagChip(
+                  label: 'neon city',
+                  onTap: () => _applyTag('neon city'),
+                ),
+                TagChip(
+                  label: 'mecha',
+                  onTap: () => _applyTag('mecha'),
+                ),
+                TagChip(
+                  label: 'studio ghibli',
+                  onTap: () => _applyTag('studio ghibli'),
+                ),
+                TagChip(
+                  label: 'samurai',
+                  onTap: () => _applyTag('samurai'),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -118,14 +178,20 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                 child: RefreshIndicator(
                   onRefresh: _loadWallpapers,
                   child: GridView.builder(
+                    controller: _scrollController,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       childAspectRatio: 0.75,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),
-                    itemCount: _wallpapers.length,
+                    itemCount: _wallpapers.length + (_isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
+                      if (index >= _wallpapers.length) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
                       final wallpaper = _wallpapers[index];
                       return GestureDetector(
                         onTap: () {

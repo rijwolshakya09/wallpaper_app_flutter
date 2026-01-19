@@ -1,17 +1,29 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wallpaper_app_flutter/models/wallpaper.dart';
+import 'package:wallpaper_app_flutter/state/favorites_provider.dart';
 
-class WallpaperDetailScreen extends StatelessWidget {
+class WallpaperDetailScreen extends ConsumerWidget {
   const WallpaperDetailScreen({super.key, required this.wallpaper});
 
   final Wallpaper wallpaper;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favorites = ref.watch(favoritesProvider);
+    final isFavorite = favorites.any((item) => item.id == wallpaper.id);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Wallpaper'),
+        actions: [
+          IconButton(
+            icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
+            onPressed: () {
+              ref.read(favoritesProvider.notifier).toggle(wallpaper);
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

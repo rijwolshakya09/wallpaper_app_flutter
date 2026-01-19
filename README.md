@@ -6,6 +6,7 @@ A Flutter starter app for anime wallpaper discovery and AI generation.
 - Browse anime wallpapers from a Danbooru-compatible API (defaults to Danbooru).
 - Generate anime wallpapers using a self-hosted open-source AI endpoint (AUTOMATIC1111-compatible).
 - Material 3 UI with tabs for browsing, generation, library, and in-app settings.
+- Favorites are stored locally using shared preferences.
 
 ## Configure APIs
 Update the base URLs from the Settings screen in-app or edit the defaults in:

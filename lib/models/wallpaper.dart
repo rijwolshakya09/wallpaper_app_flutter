@@ -36,6 +36,32 @@ class Wallpaper {
     );
   }
 
+  factory Wallpaper.fromStorage(Map<String, dynamic> json) {
+    return Wallpaper(
+      id: json['id'] as String,
+      previewUrl: json['previewUrl'] as String,
+      fullUrl: json['fullUrl'] as String,
+      tags: List<String>.from(json['tags'] as List<dynamic>),
+      source: json['source'] as String,
+      rating: json['rating'] as String,
+      width: json['width'] as int,
+      height: json['height'] as int,
+    );
+  }
+
+  Map<String, dynamic> toStorage() {
+    return {
+      'id': id,
+      'previewUrl': previewUrl,
+      'fullUrl': fullUrl,
+      'tags': tags,
+      'source': source,
+      'rating': rating,
+      'width': width,
+      'height': height,
+    };
+  }
+
   static String? _readString(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
